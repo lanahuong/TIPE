@@ -25,7 +25,9 @@ test_net = [
     [([0.35,0.15,0.20],sigmoid),
      ([0.35,0.25,0.30],sigmoid)],
     [([0.60,0.40,0.45],sigmoid),
-     ([0.60,0.50,0.55],sigmoid)]
+     ([0.60,0.50,0.55],sigmoid)],
+    [([0.85,0.65,0.70],sigmoid),
+     ([0.85,0.75,0.80],sigmoid)]
 ]
 
 f=2
@@ -52,7 +54,7 @@ def backprop(aSet, network, f, alpha):
             y.append(x.pop())
         # Forward propagation gives the list of activations by layer
         A = forward(x, network)
-        d = [[1]]
+        d = [[]]
         # dC/dz for the last layer
         for i in range(f):
             d[0].append((A[-1][-f+i]-y[i-1]) * A[-1][-f+i] * (1-A[-1][-f+i]))
@@ -60,20 +62,20 @@ def backprop(aSet, network, f, alpha):
         # dC/dz for all other layers
         # for each layer going backward
         for l in range(1, len(network)):
-            d.append([1])
+            d.append([])
             #for each neuron in the layer L-l-1
             for i in range(0, len(network[-l-1])):
                 s = 0
-                for k in range(0,len(network[-l-1][i][0])):
-                    s += d[-l-1][k]*network[-l-1][i][0][k]
+                for k in range(1,len(network[-l-1][i][0])):
+                    s += d[-l-1][k-1]*network[-l][k-1][0][i+1]
 
-                d[l].append(s*A[-l][i]*(1-A[-l][i]))
+                d[l].append(s*A[-l-1][i+1]*(1-A[-l-1][i+1]))
 
         # dC/dw for each weight
         for l in range(len(D)):
             for k in range(len(D[l])):
                 for j in range(len(D[l][k])):
-                    D[l][k][j] += d[-l-1][j]*A[-l-1][k] /len(dataset)
+                    D[l][k][j] += d[-l-1][k]*A[l][j] /len(dataset)
 
     for l in range(len(network)):
         for k in range(len(network[l])):
@@ -85,8 +87,8 @@ def get_data():
     return
 
 # the last element of the dataset should be the expected result
-for _ in range(700):
-    test_set = [[0.05,0.10,0.01,0.99]]
+for _ in range(500):
+    test_set = [[0.05,0.10,0.01,0.99] for _ in range(100)]
     backprop(test_set, test_net, f, 0.5)
 
 print(forward(test_set[0][:2], test_net))
