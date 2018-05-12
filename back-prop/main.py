@@ -44,10 +44,11 @@ def forward(X, network):
     return V
 
 # f is the number of neuron in the last layer
-def backprop(aSet, network, f, alpha):
+def backprop(aSet, network, f, alpha, beta):
     dataset = aSet[:]
     # array of cumulated dC/dw
     D = [[[0 for _ in range(len(network[l][i][0]))] for i in range(len(network[l]))] for l in range(len(network))]
+    grad = []
     for x in dataset:
         y = []
         for i in range(f):
@@ -71,11 +72,17 @@ def backprop(aSet, network, f, alpha):
 
                 d[l].append(s*A[-l-1][i+1]*(1-A[-l-1][i+1]))
 
+        grad.append([])
         # dC/dw for each weight
         for l in range(len(D)):
+            grad[-1].append([])
             for k in range(len(D[l])):
+                grad[-1][l].append([])
                 for j in range(len(D[l][k])):
-                    D[l][k][j] += d[-l-1][k]*A[l][j] /len(dataset)
+                    grad[-1][l][k].append(d[-l-1][k]*A[l][j])
+                    D[l][k][j] += grad[-1][l][k][j] /len(dataset)
+                    if len(grad) >= 2:
+                        D[l][k][j] += beta*grad[-2][l][k][j] /len(dataset)
 
     for l in range(len(network)):
         for k in range(len(network[l])):
@@ -89,6 +96,6 @@ def get_data():
 # the last element of the dataset should be the expected result
 for _ in range(500):
     test_set = [[0.05,0.10,0.01,0.99] for _ in range(100)]
-    backprop(test_set, test_net, f, 0.5)
+    backprop(test_set, test_net, f, 0.5, 0.999)
 
 print(forward(test_set[0][:2], test_net))
