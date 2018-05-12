@@ -58,7 +58,10 @@ def backprop(aSet, network, f, alpha, beta):
         d = [[]]
         # dC/dz for the last layer
         for i in range(f):
-            d[0].append((A[-1][-f+i]-y[i-1]) * A[-1][-f+i] * (1-A[-1][-f+i]))
+            if network[-1][i][1] == sigmoid :
+                d[0].append((A[-1][-f+i]-y[i-1]) * A[-1][-f+i] * (1-A[-1][-f+i]))
+            elif network[-1][i][1] == Id :
+                d[0].append(A[-1][-f+i]-y[i-1])
 
         # dC/dz for all other layers
         # for each layer going backward
