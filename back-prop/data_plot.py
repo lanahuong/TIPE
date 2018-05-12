@@ -5,6 +5,8 @@ from tkinter.ttk import *
 from tkinter.filedialog import askopenfilename
 import matplotlib.pyplot as pyplot
 import csv
+from operator import itemgetter
+from math import sqrt
 
 Tk()
 
@@ -64,19 +66,52 @@ class DataPlot(Frame):
 
         self.xLabel = self.headers[w[1].current()]
         self.yLabel = self.headers[w[0].current()]
-        print(self.xLabel, self.yLabel)
         X = []
         Y = []
+        Xmoy = []
+        Ymoy = []
+        it = []
         with open(self.currentFile, 'r') as dataFile:
             reader = csv.DictReader(dataFile)
             for row in reader:
-                print(row['date'])
                 if row[self.xLabel] != 'N/A' and row[self.yLabel] != 'N/A':
                     X.append(float(row[self.xLabel]))
                     Y.append(float(row[self.yLabel]))
 
+        l = list(zip(X,Y))
+        l.sort(key=itemgetter(0))
+        X,Y = zip(*l)
+        for i in range(len(X)):
+            if i == 0 :
+                Xmoy.append(X[i])
+                Ymoy.append(Y[i])
+                it.append(1)
+            elif X[i]==Xmoy[-1]:
+                Ymoy[-1] += Y[i]
+                it[-1] += 1
+            else:
+                Xmoy.append(X[i])
+                Ymoy.append(Y[i])
+                it.append(1)
+
+        for i in range(len(Xmoy)):
+            Ymoy[i] /= it[i]
+
+        Yec = [0 for _ in range(len(Ymoy))]
+        j = 0
+        for i in range(len(Y)):
+            if Xmoy[j] != X[i] :
+                 j += 1
+            Yec[j] += (Ymoy[j]-Y[i])**2 / it[j]
+
+        Yecsup = [Ymoy[i]+sqrt(Yec[i]) for i in range(len(Ymoy))]
+        Yecinf = [Ymoy[i]-sqrt(Yec[i]) for i in range(len(Ymoy))]
+
         pyplot.autoscale(enable=True, axis='both', tight=None)
-        pyplot.scatter(X,Y)
+        pyplot.scatter(X,Y,color='blue')
+        pyplot.scatter(Xmoy,Yecsup,color='green')
+        pyplot.scatter(Xmoy,Yecinf,color='green')
+        pyplot.scatter(Xmoy,Ymoy,color='red')
         pyplot.show()
 
         return
