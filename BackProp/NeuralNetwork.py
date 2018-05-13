@@ -7,12 +7,6 @@
 from math import exp
 from BackProp.Perceptron import *
 
-def sigmoid(t):
-    return 1/(1+exp(-t))
-
-def Id(t):
-    return t
-
 class NeuralNetwork:
     def __init__(self, description, alpha=0.5, beta=0.99):
         # description = [(number_of_neuron, number_of_weights, function), (...)]
@@ -86,11 +80,42 @@ class NeuralNetwork:
         for b in batches:
             self.backprop(b, prevD)
 
+    def test_with_set(self, aSet):
+        # error function
+        dataset = aSet[:]
+        C = 0
+        for x in dataset:
+            y = []
+            c = 0
+            for _ in range(self.f):
+                y.append(x.pop())
+
+            r = self.forward(x)[-1]
+
+            for i in range(len(r)):
+                c += (r[i]-y[i])**2
+
+            c /= self.f
+            C += c
+
+        C /= len(dataset)
+
+        return C
+
+
+# -------------------------------------------------------
+# The following is an example of usage
+
+#def sigmoid(t):
+#    return 1/(1+exp(-t))
+
+#def Id(t):
+#    return t
 
 # test : 500 batches of 100 identical exemples
-test_batches = [[[0.05,0.10,0.01,0.99] for _ in range(100)] for _ in range(500)]
+#test_batches = [[[0.05,0.10,0.01,0.99] for _ in range(100)] for _ in range(500)]
 
 # creating the test network : 3 layers of 2 neurons with 3 weights
-description = [(2,3,sigmoid) for _ in range(3)]
-test_neural_net = NeuralNetwork(description, 0.5, 0.99)
-test_neural_net.learn_mini_batches(test_batches)
+#description = [(2,3,sigmoid) for _ in range(3)]
+#test_neural_net = NeuralNetwork(description, 0.5, 0.99)
+#test_neural_net.learn_mini_batches(test_batches)
