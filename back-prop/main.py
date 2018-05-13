@@ -44,11 +44,10 @@ def forward(X, network):
     return V
 
 # f is the number of neuron in the last layer
-def backprop(aSet, network, f, alpha, beta):
+def backprop(aSet, network, f, prevD, alpha, beta):
     dataset = aSet[:]
     # array of cumulated dC/dw
     D = [[[0 for _ in range(len(network[l][i][0]))] for i in range(len(network[l]))] for l in range(len(network))]
-    grad = []
     for x in dataset:
         y = []
         for i in range(f):
@@ -75,30 +74,31 @@ def backprop(aSet, network, f, alpha, beta):
 
                 d[l].append(s*A[-l-1][i+1]*(1-A[-l-1][i+1]))
 
-        grad.append([])
         # dC/dw for each weight
         for l in range(len(D)):
-            grad[-1].append([])
             for k in range(len(D[l])):
-                grad[-1][l].append([])
                 for j in range(len(D[l][k])):
-                    grad[-1][l][k].append(d[-l-1][k]*A[l][j])
-                    D[l][k][j] += grad[-1][l][k][j] /len(dataset)
-                    if len(grad) >= 2:
-                        D[l][k][j] += beta*grad[-2][l][k][j] /len(dataset)
+                    D[l][k][j] += d[-l-1][k]*A[l][j] /len(dataset)
 
     for l in range(len(network)):
         for k in range(len(network[l])):
             for j in range(len(network[l][k][0])):
-                network[l][k][0][j] -= alpha*D[l][k][j]
+                network[l][k][0][j] -= alpha*(D[l][k][j] + beta*prevD[l][k][j])
+                prevD[l][k][j] = D[l][k][j]
+
 
 
 def get_data():
     return
 
 # the last element of the dataset should be the expected result
-for _ in range(500):
-    test_set = [[0.05,0.10,0.01,0.99] for _ in range(100)]
-    backprop(test_set, test_net, f, 0.5, 0.999)
+def learn_mini_batches(batches, network, alpha, beta, f):
+    prevD = [[[0 for _ in range(len(test_net[l][i][0]))] for i in range(len(test_net[l]))] for l in range(len(test_net))]
+    for b in batches:
+        backprop(b, network, f, prevD, alpha, beta)
 
-print(forward(test_set[0][:2], test_net))
+test_set = [[[0.05,0.10,0.01,0.99] for _ in range(100)] for _ in range(500)]
+
+learn_mini_batches(test_set, test_net, 0.5, 0.99, f)
+
+print(forward(test_set[0][0][:2], test_net))
