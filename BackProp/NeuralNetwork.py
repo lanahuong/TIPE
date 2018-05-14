@@ -3,15 +3,20 @@
 # ----- NeuralNetwork class -----
 # -------------------------------
 
-
 from math import exp
-from BackProp.Perceptron import *
+from BackProp.Perceptron import Perceptron
 
 class NeuralNetwork:
     def __init__(self, description, alpha=0.5, beta=0.99):
         # description = [(number_of_neuron, number_of_weights, function), (...)]
         # len(description) = number of layers
-        self.network = [[perceptron(layer[1], layer[2]) for _ in range(layer[0])] for layer in description]
+        self.network = []
+        for layer in description:
+            l = []
+            for k in range(layer[0]):
+                l.append(Perceptron(layer[1], layer[2]))
+            self.network.append(l)
+        #self.network = [[Perceptron(layer[1], layer[2]) for _ in range(layer[0])] for layer in description]
         self.alpha = alpha
         self.beta = beta
         self.f = description[-1][0]
@@ -44,20 +49,20 @@ class NeuralNetwork:
             d = [[]]
             # dC/dz for the last layer
             for i in range(self.f):
-                if self.network[-1][i].func == sigmoid :
+                if self.network[-1][i].func == sigmoid:
                     d[0].append((A[-1][-self.f+i]-y[i-1]) * A[-1][-self.f+i] * (1-A[-1][-self.f+i]))
-                elif self.network[-1][i].func == Id :
+                elif self.network[-1][i].func == Id:
                     d[0].append(A[-1][-self.f+i]-y[i-1])
 
             # dC/dz for all other layers
             # for each layer going backward
             for l in range(1, len(self.network)):
                 d.append([])
-                #for each neuron in the layer L-l-1
+                # for each neuron in the layer L-l-1
                 for i in range(0, len(self.network[-l-1])):
                     s = 0
-                    for k in range(1,len(self.network[-l-1][i].coeff)):
-                        s += d[-l-1][k-1]*self.network[-l][k-1].coeff[i+1]
+                    for k in range(0, len(self.network[-l])):
+                        s += d[-2][k]*self.network[-l][k].coeff[i+1]
 
                     d[l].append(s*A[-l-1][i+1]*(1-A[-l-1][i+1]))
 
@@ -65,14 +70,13 @@ class NeuralNetwork:
             for l in range(len(D)):
                 for k in range(len(D[l])):
                     for j in range(len(D[l][k])):
-                        D[l][k][j] += d[-l-1][k]*A[l][j] /len(dataset)
+                        D[l][k][j] += d[-l-1][k] * A[l][j] / len(dataset)
 
         for l in range(len(self.network)):
             for k in range(len(self.network[l])):
                 for j in range(len(self.network[l][k].coeff)):
                     self.network[l][k].coeff[j] -= self.alpha*(D[l][k][j] + self.beta*prevD[l][k][j])
                     prevD[l][k][j] = D[l][k][j]
-
 
     # the last element of the dataset should be the expected result
     def learn_mini_batches(self, batches):
@@ -92,8 +96,8 @@ class NeuralNetwork:
 
             r = self.forward(x)[-1]
 
-            for i in range(len(r)):
-                c += (r[i]-y[i])**2
+            for i in range(len(y)):
+                c += (r[i+1]-y[i])**2
 
             c /= self.f
             C += c
@@ -104,18 +108,22 @@ class NeuralNetwork:
 
 
 # -------------------------------------------------------
-# The following is an example of usage
+# Activation functions
 
-#def sigmoid(t):
-#    return 1/(1+exp(-t))
+def sigmoid(t):
+    return 1/(1+exp(-t))
 
-#def Id(t):
-#    return t
+def Id(t):
+    return t
+
+# -------------------------------------------------------
+# The following is an exemple of usage
+
 
 # test : 500 batches of 100 identical exemples
-#test_batches = [[[0.05,0.10,0.01,0.99] for _ in range(100)] for _ in range(500)]
+#test_batches = [[[0.05, 0.10, 1] for _ in range(100)] for _ in range(500)]
 
 # creating the test network : 3 layers of 2 neurons with 3 weights
-#description = [(2,3,sigmoid) for _ in range(3)]
+#description = [(2, 3, sigmoid) for _ in range(2)] + [(1,3, sigmoid)]
 #test_neural_net = NeuralNetwork(description, 0.5, 0.99)
 #test_neural_net.learn_mini_batches(test_batches)
