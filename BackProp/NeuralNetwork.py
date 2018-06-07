@@ -3,7 +3,7 @@
 # ----- NeuralNetwork class -----
 # -------------------------------
 
-from math import exp
+from math import exp, fabs, sqrt
 from BackProp.Perceptron import Perceptron
 
 class NeuralNetwork:
@@ -33,18 +33,16 @@ class NeuralNetwork:
         return V
 
     def backprop(self, aSet, prevD):
-        dataset = aSet[:]
+        dataset = list(aSet)
         # D is the array of cumulated dC/dw
         D = [[[0 for _ in p.coeff]
               for p in layer]
              for layer in self.network]
 
         for x in dataset:
-            y = []
-            for i in range(self.f):
-                y.append(x.pop())
+            y = x[-self.f:]
             # Forward propagation gives the list of activations by layer
-            A = self.forward(x)
+            A = self.forward(x[:(-self.f)])
             # d contains dC/dz by layer
             d = [[]]
             # dC/dz for the last layer
@@ -53,6 +51,8 @@ class NeuralNetwork:
                     d[0].append((A[-1][-self.f+i]-y[i-1]) * A[-1][-self.f+i] * (1-A[-1][-self.f+i]))
                 elif self.network[-1][i].func == Id:
                     d[0].append(A[-1][-self.f+i]-y[i-1])
+                elif self.network[-1][i].func == RELu:
+                    d[0].append((A[-1][-self.f+i]-y[i-1])*int((A[-1][-self.f+i]>0)))
 
             # dC/dz for all other layers
             # for each layer going backward
@@ -64,7 +64,10 @@ class NeuralNetwork:
                     for k in range(0, len(self.network[-l])):
                         s += d[-2][k]*self.network[-l][k].coeff[i+1]
 
-                    d[l].append(s*A[-l-1][i+1]*(1-A[-l-1][i+1]))
+                    if self.network[-l-1][i].func == sigmoid:
+                        d[l].append(s*A[-l-1][i]*(1-A[-l-1][i]))
+                    elif self.network[-l-1][i].func == RELu:
+                        d[l].append(s*int((A[-l-1][i]>0)))
 
             # dC/dw for each weight
             for l in range(len(D)):
@@ -86,25 +89,53 @@ class NeuralNetwork:
 
     def test_with_set(self, aSet):
         # error function
-        dataset = aSet[:]
-        C = 0
+        dataset = list(aSet)
+        C = []
+        m = 0
+        A = 0
+        B = 0
+        D = 0
+        E = 0
         for x in dataset:
-            y = []
-            c = 0
-            for _ in range(self.f):
-                y.append(x.pop())
+            y = x[-self.f:]
 
-            r = self.forward(x)[-1]
+            r = self.forward(x[:(-self.f)])[-1]
 
             for i in range(len(y)):
-                c += (r[i+1]-y[i])**2
+                C.append(y[i]-r[i+1])
+                m += C[-1]
 
-            c /= self.f
-            C += c
+        m /= len(C)
+        V = 0
+        for i in range(len(C)):
+            V += (m-C[i])**2
 
-        C /= len(dataset)
+        V /= len(C)
+        s = sqrt(V)
 
-        return C
+        for i in range(len(C)):
+            if C[i]>m+(s/2) and C[i]<m-(s/2):
+                A += 1
+            elif C[i]>m+(s/4) and C[i]<m-(s/4):
+                B += 1
+            elif C[i]>m+(4*s/sqrt(len(C))) and C[i]<m-(4*s/sqrt(len(C))):
+                D += 1
+            else:
+                E += 1
+
+        print(A,B,D,E)
+        print(len(C))
+
+        A /= len(C)
+        B /= len(C)
+        D /= len(C)
+        E /= len(C)
+
+        print(A,B,D,E)
+
+        print('moy : '+str(m))
+        print('V : '+str(V))
+        print('e-type : '+str(s))
 
 
 # -------------------------------------------------------
@@ -116,8 +147,10 @@ def sigmoid(t):
 def Id(t):
     return t
 
+def RELu(t):
+    return int(t>0) * t
 # -------------------------------------------------------
-# The following is an exemple of usage
+# The following is an example of usage
 
 
 # test : 500 batches of 100 identical exemples

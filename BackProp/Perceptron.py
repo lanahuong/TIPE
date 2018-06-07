@@ -3,9 +3,11 @@
 # ----- Perceptron class ----
 # ---------------------------
 
+from random import random
+
 class Perceptron:
     def __init__(self, X, f):
-        self.coeff = [0.1 for _ in range(X)]
+        self.coeff = [random()/5 for _ in range(X)]
         self.func = f
 
     def evaluate(self, A):
@@ -14,5 +16,5 @@ class Perceptron:
             s += self.coeff[i]*A[i]
         return self.func(s)
 
-    def __str__(self):
+    def __format__(self):
         return (self.coeff, self.func)
